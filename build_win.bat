@@ -1,0 +1,1 @@
+gcc main.c -std=c99 -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lm -lGLU32 -o out/g7_w32.exe
