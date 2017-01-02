@@ -1,0 +1,67 @@
+\documentclass[10pt,a4paper]{report}
+\usepackage[top=0.75in, bottom=1.25in, left=1.0in, right=1.0in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage{polski}
+%\usepackage{amssymb}
+
+\begin{document}
+\section{G7 - Opis projektu}
+Po przeanalizowaniu wymagań dotyczących implementacji gry postanowiłem użyć następujących technologii:
+\begin{itemize}
+	\item Simple DirectMedia Layer 2.0.5 (licencja zlib)
+	\begin{itemize}
+	\item Obsługa okna i interakcji z użytkownikiem (klawiatura, myszka)
+	\end{itemize}
+	\item OpenGL (licencja SGI Free Software License B)
+	\begin{itemize}
+	\item Renderowanie GUI oraz planszy
+	\end{itemize}
+	\item  \href{https://github.com/vurtun/nuklear}{Nuklear} (domena publiczna)
+	\begin{itemize}
+	\item Prosta, przenośna biblioteka do tworzenia GUI
+	\end{itemize}
+	\item dirent.h (część biblioteki C POSIX, open source)
+	\begin{itemize}
+	\item Przenośny (istnieje implementacja w MinGW) interfejs do listowania plików w folderze
+	\end{itemize}
+\end{itemize}
+\par Zasady gry są analogiczne jak w tradycyjnej, "kartkowej" grze w wyścigi - stan gry to położenie samochodów obu graczy oraz ich wektory prędkości, które odpowiadają wektorom przesunięcia w ostatnim ruchu. Gra postępuje w krokach, na początku trwa oczekiwanie na wybranie ruchu przez obu graczy, a następnie zmiana ich położenia na nowe i zakończenie obecnego ruchu. Jeżeli któryś gracz przeprowadzi swoje auto przez linię mety to gra kończy się ogłoszeniem wyniku danej rozgrywki. \par
+
+Plansza stanowi opis wymiarów (+ dodatkowe parametry rozgrywki), punkty początkowe, oraz ciągi wierzchołków (o współrzędnych całkowitych) należących do prostokąta o stałych wymiarach. Każdy ciąg oznacza albo linię (w sensie łamanej) graniczną (której nie wolno przekroczyć) albo linię mety (przekroczenie której skutkuje zwycięstwem). Format, który należy jeszcze sformalizować, w założeniu będzie prostą tekstową reprezentacją powyższych struktur, zatem tworzenie map możliwe będzie za pomocą dowolnego edytora tekstowego.\par
+Gra zaprojektowana jest do obsługi przez dwóch graczy, każdy z nich ma swoją uruchomioną kopię programu, która komunikuje się z drugą w sposób analogiczny jak w przykładowym programie gtk-talk. Informacje wymieniane pomiędzy programami obejmują komendy wydawane przez graczy - to znaczy opis ruchu jaki wykonali.\par 
+Program po uruchomieniu przez użytkownika sprawdza, czy istnieje już uruchomiona kopia. Jeśli tak, to nawiązuje z nią komunikację i rozpoczyna się właściwa rozgrywka. W przeciwnym razie użytkownik wybiera planszę i gra czeka na drugiego gracza.\par 
+Podczas właściwej rozgrywki program wyświetla aktualny stan rozgrywki (zachęta do wykonania ruchu, oczekiwanie na drugiego gracza, itp.) wraz z planszą, rozumianą jako graficzna reprezentacja odcinków granicznych, mety, pozycji samochodów, punktów kratowych na mapie oraz możliwych pozycji do których możemy przejść w obecnym ruchu. W trakcie oczekiwania na wykonanie ruchu przez użytkownika program wyświetla możliwe pozycje, które może on wybrać i oczekuje na kliknięcie na którąś z nich (ewentualnie można zaimplementować interfejs tekstowy, jeżeli to konieczne). Po dokonaniu wyboru zostaje on przesłany do drugiej kopii programu, a sam program czeka na ruch przeciwnika, jeżeli jeszcze go nie otrzymał. Po otrzymaniu i wykonaniu ruchu stan gry zostaje zaktualizowany i krok gry rozpoczyna się na nowo. Gdy program zauważy, że któryś z graczy przekroczył metę, informuje o tym użytkownika i daje mu opcję zakończenia rozgrywki, tym samym wyłączając program.
+
+\subsection*{Funkcje programu}
+\begin{itemize}
+\item Interfejs graficzny
+	\begin{itemize}
+	\item Tworzenie okna
+	\item Przechwytywanie zdarzeń (kliknięcie, naciśnięcie przycisku itd.)
+	\item Wyświetlanie interfejsu i rozgrywki
+	\end{itemize}
+\item Komunikacja ze swoją kopią
+	\begin{itemize}
+	\item Wykrywanie obecności kopii
+	\item Przesyłanie parametrów gry (przy rozpoczęciu rozgrywki)
+	\item Przekazywanie ruchów gracza
+	\end{itemize}
+\item Obsługa planszy
+	\begin{itemize}
+	\item Opcja wyboru pliku z planszą
+	\item Ładowanie planszy z pliku i interpretowanie jej elementów
+	\end{itemize}
+\item Rozgrywka
+	\begin{itemize}
+	\item Interpretowanie komend użytkownika
+	\item Walidacja poprawności wyboru i wykonanie go
+	\item Wykrywanie końca gry
+	\end{itemize}
+	
+\end{itemize}
+W obecnej chwili trudno jest szczegółowo opisać podział programu na moduły, z pewnością jednak konieczne będzie rozdzielenie warstw komunikacji, graficznej i interakcji z użytkownikiem.
+
+\end{document}
