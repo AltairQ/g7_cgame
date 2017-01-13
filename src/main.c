@@ -79,6 +79,8 @@ int main(int argc, char* argv[])
 		int map_choice = load_dialog_stageloop(win, ctx, win_width, win_height);
 		printf("chosen map: %s\n", maps[map_choice] );
 	}
+
+	gameplay_stageloop(win, ctx, win_width, win_height);
 	
 
 cleanup:

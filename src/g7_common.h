@@ -43,4 +43,5 @@
 
 #include "main_menu.h"
 #include "load_dialog.h"
-
+#include "gameplay.h"
+#include "utils.h"
