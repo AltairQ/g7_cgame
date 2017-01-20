@@ -32,11 +32,7 @@ int main(int argc, char* argv[])
 	//TODO
 	//SDL_SetWindowIcon
 
-	//if fullscreen
-	// SDL_DisplayMode modein;
-	// SDL_GetDesktopDisplayMode(0, &modein);
-	// SDL_SetWindowSize(win, modein.w, modein.h);
-	// SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN);
+
 
 	ctx = nk_sdl_init(win);
 
@@ -51,36 +47,46 @@ int main(int argc, char* argv[])
 	nk_style_set_font(ctx, &droid->handle);
 	}
 
+	G7_stage game_stage;
+	game_stage.win = win;
+	game_stage.ctx = ctx;
+	game_stage.flags = 0;
 
-	int game_params = main_menu_stageloop(win, ctx, win_width, win_height);
+
+	game_stage.flags = main_menu_stageloop(&game_stage);
 
 	#ifdef DEBUG
 	printf("exited stageloop\n");
 	#endif
 
-	if (game_params == 0 )
+	if (game_stage.flags == 0 )
 		goto cleanup;
 
-
-
-	if (game_params & G7_PARAM_FULLSCREEN)
+	if (game_stage.flags & G7_PARAM_FULLSCREEN)
 	{
 		printf("fullscreen\n");
 	}
 
-	if (game_params & G7_PARAM_NEWGAME )
+	if (game_stage.flags & G7_PARAM_NEWGAME )
 	{
 		printf("newgame\n");
 	}
 
-	if (game_params & G7_PARAM_LOADGAME )
+	int map_choice=-3;
+
+	if (game_stage.flags & G7_PARAM_LOADGAME )
 	{
 		printf("loadgame\n");
-		int map_choice = load_dialog_stageloop(win, ctx, win_width, win_height);
+		int map_choice = load_dialog_stageloop(&game_stage);
 		printf("chosen map: %s\n", maps[map_choice] );
 	}
 
-	gameplay_stageloop(win, ctx, win_width, win_height);
+	if (map_choice == 0 || map_choice == -1)
+	{
+		goto cleanup;
+	}
+
+	gameplay_stageloop(&game_stage);
 	
 
 cleanup:

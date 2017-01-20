@@ -28,3 +28,11 @@ struct nk_context* G7_nk_sdl_reset(SDL_Window *win)
 	return G7_nk_sdl_setup(win);
 
 }
+
+void G7_SDL_go_fullscreen(SDL_Window *win)
+{
+	SDL_DisplayMode modein;
+	SDL_GetDesktopDisplayMode(0, &modein);
+	SDL_SetWindowSize(win, modein.w, modein.h);
+	SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN);
+}

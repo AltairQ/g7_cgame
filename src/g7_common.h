@@ -41,7 +41,9 @@
 #include "nuklear/nuklear.h"
 #include "nuklear/nuklear_sdl_gl2.h"
 
+#include "utils.h"
+
 #include "main_menu.h"
 #include "load_dialog.h"
 #include "gameplay.h"
-#include "utils.h"
+

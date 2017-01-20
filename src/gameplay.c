@@ -17,13 +17,18 @@ void DrawCircle(float cx, float cy, float r, int num_segments)
     glEnd();
 }
 
-int gameplay_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, int win_height)
+int gameplay_stageloop(G7_stage *stage)
 {
+	int win_width = 1024;
+	int win_height = 768;
+	if(stage->flags & G7_PARAM_FULLSCREEN)
+		G7_SDL_go_fullscreen(stage->win);
+	else
+		SDL_SetWindowSize(stage->win, win_width, win_height);
 
-	win_width = 512;
-	win_height = 512;
-	SDL_SetWindowSize(win, win_width, win_height);
-	ctx = G7_nk_sdl_reset(win);
+	stage->ctx = G7_nk_sdl_reset(stage->win);
+	SDL_GetWindowSize(stage->win, &win_width, &win_height);
+
 
 	int running = 1;
 	struct nk_color background = nk_rgb(28,48,62);
@@ -36,7 +41,7 @@ int gameplay_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, i
 	while (running && SDL_WaitEvent(&evt))
 	{
 		
-		nk_input_begin(ctx);
+		nk_input_begin(stage->ctx);
 
 		do
 		{
@@ -45,43 +50,43 @@ int gameplay_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, i
 		}
 		while (SDL_PollEvent(&evt));
 
-		nk_input_end(ctx);
+		nk_input_end(stage->ctx);
 
-		if (nk_begin(ctx, "Blah", nk_rect(0, 0, 120, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Blah", nk_rect(0, 0, 120, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
 			NK_WINDOW_TITLE))
 		{
 
-			nk_layout_row_dynamic(ctx, 30, 1);
+			nk_layout_row_dynamic(stage->ctx, 30, 1);
 
-			if (nk_button_label(ctx, "Up"))
+			if (nk_button_label(stage->ctx, "Up"))
 			{
 				y-=10.0f;
 				printf("y: %f\n", y );
 			}
-			if (nk_button_label(ctx, "Left"))
+			if (nk_button_label(stage->ctx, "Left"))
 			{
 				x-=10.f;
 				printf("x: %f\n", x );
 			}
-			if (nk_button_label(ctx, "Rad+"))
+			if (nk_button_label(stage->ctx, "Rad+"))
 			{
 				z+=10.0f;
 				printf("z: %f\n", z );
 			}
-			if (nk_button_label(ctx, "Exit"))
+			if (nk_button_label(stage->ctx, "Exit"))
 			{
 				running = 0;
 			}
 
 
 		}
-		nk_end(ctx);
+		nk_end(stage->ctx);
 
 		//Drawing 
 		{float bg[4];
 		nk_color_fv(bg, background);
-		SDL_GetWindowSize(win, &win_width, &win_height);
+		SDL_GetWindowSize(stage->win, &win_width, &win_height);
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -90,7 +95,7 @@ int gameplay_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, i
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// for (int i = 0; i < 10; ++i)
-			DrawCircle(x, y, z, 1000);
+			DrawCircle(x, y, z, 10000);
 	
 		glClearColor(bg[0], bg[1], bg[2], bg[3]);
 		//MAY BREAK
@@ -100,7 +105,7 @@ int gameplay_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, i
 		//depth test
 		//viewport
 		nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
-		SDL_GL_SwapWindow(win);
+		SDL_GL_SwapWindow(stage->win);
 		}
 
 

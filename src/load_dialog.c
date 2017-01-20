@@ -3,7 +3,7 @@
 char *maps[256];
 size_t map_count=1;
 
-int load_dialog_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width, int win_height)
+int load_dialog_stageloop(G7_stage *stage)
 {
 	{
 		DIR *dir;
@@ -36,14 +36,16 @@ int load_dialog_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width
 	int option_fullscreen = 0;
 	bool action_newgame = false;
 	bool action_loadgame = false;
-	// bool option_hax = false;
+
 	int option_mapchoice = 0;
+	int win_height, win_width;
+	SDL_GetWindowSize(stage->win, &win_width, &win_height);
 
 	SDL_Event evt;
 	while (running && SDL_WaitEvent(&evt))
 	{
 		
-		nk_input_begin(ctx);
+		nk_input_begin(stage->ctx);
 
 		do
 		{
@@ -52,47 +54,47 @@ int load_dialog_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width
 		}
 		while (SDL_PollEvent(&evt));
 
-		nk_input_end(ctx);
+		nk_input_end(stage->ctx);
 
-		if (nk_begin(ctx, "Choose map", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Choose map", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
 			NK_WINDOW_TITLE))
 		{
-			nk_layout_row_dynamic(ctx, win_height - 100, 1);
+			nk_layout_row_dynamic(stage->ctx, win_height - 100, 1);
 
-			nk_group_begin(ctx, "", 0 );
+			nk_group_begin(stage->ctx, "", 0 );
 			{
-				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_layout_row_dynamic(stage->ctx, 30, 1);
 				for (int i = 1; i < map_count; ++i)
-					if(nk_button_label(ctx, maps[i]))
+					if(nk_button_label(stage->ctx, maps[i]))
 					{
 						option_mapchoice = i;
 					}
 
 				if (map_count == 1)
 				{
-					nk_label(ctx, "(no maps found)", NK_TEXT_CENTERED);
+					nk_label(stage->ctx, "(no maps found)", NK_TEXT_CENTERED);
 				}
 
 			}
 
-			nk_group_end(ctx);
-			nk_layout_row_dynamic(ctx, 30, 1);
+			nk_group_end(stage->ctx);
+			nk_layout_row_dynamic(stage->ctx, 30, 1);
 
 
-			if (nk_button_label(ctx, "Cancel"))
+			if (nk_button_label(stage->ctx, "Cancel"))
 			{
 				return 0;
 			}
 
 
 		}
-		nk_end(ctx);
+		nk_end(stage->ctx);
 
 		//Drawing 
 		{float bg[4];
 		nk_color_fv(bg, background);
-		SDL_GetWindowSize(win, &win_width, &win_height);
+		SDL_GetWindowSize(stage->win, &win_width, &win_height);
 		glViewport(0, 0, win_width, win_height);
 		glClear(GL_COLOR_BUFFER_BIT);
 		
@@ -104,11 +106,11 @@ int load_dialog_stageloop(SDL_Window *win, struct nk_context *ctx, int win_width
 		//depth test
 		//viewport
 		nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
-		SDL_GL_SwapWindow(win);
+		SDL_GL_SwapWindow(stage->win);
 		}
 
 		if (option_mapchoice != 0)		
-			return option_mapchoice;
+			return option_mapchoice;		
 		
 
 
