@@ -1,1 +1,1 @@
-gcc src/main.c src/main_menu.c src/load_dialog.c src/gameplay.c src/utils.c -std=c99 -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lm -lGLU32 -o out/g7_w32.exe
+gcc src/fifo/fifo.c src/main.c src/main_menu.c src/load_dialog.c src/gameplay.c src/utils.c src/engine.c src/parser.c -std=c99 -Wall -Wextra -Wshadow -Wconversion -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lm -lGLU32 -o out/g7_w32.exe

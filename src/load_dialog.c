@@ -8,7 +8,7 @@ int load_dialog_stageloop(G7_stage *stage)
 	{
 		DIR *dir;
 		struct dirent *ent;
-		if ((dir = opendir ("./out/maps/")) != NULL) {
+		if ((dir = opendir ("./maps/")) != NULL) {
 
 			while ((ent = readdir (dir)) != NULL && map_count < 256)
 			{

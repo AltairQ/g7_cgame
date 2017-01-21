@@ -5,6 +5,7 @@ int main_menu_stageloop(G7_stage *stage)
 	int running = 1;
 	struct nk_color background = nk_rgb(28,48,62);
 	int option_fullscreen = 0;
+	int option_host = 0;
 	bool action_newgame = false;
 	bool action_loadgame = false;
 
@@ -64,6 +65,15 @@ int main_menu_stageloop(G7_stage *stage)
 				option_fullscreen = 0;
 			}
 
+			if (nk_option_label(stage->ctx, "host", option_host == G7_PARAM_HOST ))
+			{
+				option_host = G7_PARAM_HOST;
+			}
+			else
+			{
+				option_host = 0;
+			}
+
 
 			nk_group_end(stage->ctx);
 			nk_layout_row_dynamic(stage->ctx, 25, 1);
@@ -97,10 +107,10 @@ int main_menu_stageloop(G7_stage *stage)
 		}
 
 		if(action_loadgame)
-			return G7_PARAM_LOADGAME | option_fullscreen;
+			return G7_PARAM_LOADGAME | option_fullscreen | option_host;
 
 		if(action_newgame)
-			return G7_PARAM_NEWGAME | option_fullscreen;
+			return G7_PARAM_NEWGAME | option_fullscreen | option_host;
 
 	}
 }

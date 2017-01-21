@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 
 	/* SDL setup */
 	SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -77,13 +77,27 @@ int main(int argc, char* argv[])
 	if (game_stage.flags & G7_PARAM_LOADGAME )
 	{
 		printf("loadgame\n");
-		int map_choice = load_dialog_stageloop(&game_stage);
-		printf("chosen map: %s\n", maps[map_choice] );
+		map_choice = load_dialog_stageloop(&game_stage);
+		printf("chosen map (%d): %s\n", map_choice, maps[map_choice] );
 	}
 
 	if (map_choice == 0 || map_choice == -1)
 	{
 		goto cleanup;
+	}
+
+	if (map_choice > 0)
+	{
+		printf("loadmap: %d \n", load_map(map_choice));
+	}
+
+	for (int i = 0; i < game_state.map.size.y; ++i)
+	{
+		for (int ii = 0; ii < game_state.map.size.x; ++ii)
+		{
+			putchar(game_state.map.tab[i][ii] + '0');
+		}
+		puts("");
 	}
 
 	gameplay_stageloop(&game_stage);
