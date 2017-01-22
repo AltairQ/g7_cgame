@@ -4,6 +4,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include <SDL2/SDL_net.h>
+
 /* nuklear - v1.17 - public domain */
 
 #define WINDOW_WIDTH 300

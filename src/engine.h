@@ -5,7 +5,9 @@ typedef enum
 	block,
 	finish,
 	startA,
-	startB	
+	startB,
+	pA,
+	pB	
 }
 g7_tile;
 

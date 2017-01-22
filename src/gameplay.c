@@ -34,6 +34,14 @@ void g7_draw_tile(int y, int x, g7_tile tile, bool focus)
 			glColor4f(0.0f, 1.0f, 0.0f, 0.7f + ((focus)?0.3f:0.0f)  );
 		break;
 
+		case pB:
+			glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+		break;
+
+		case pA:
+			glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+		break;
+
 		default:
 			glColor4f(1.0f, 0.0f, 0.0f, 0.7f + ((focus)?0.3f:0.0f)  );
 		break;
@@ -58,7 +66,6 @@ void g7_draw_tile(int y, int x, g7_tile tile, bool focus)
 
 
 g7_vertex chosen_tile;
-g7_vertex him;
 
 void g7_draw_map(g7_vertex mouse)
 {
@@ -69,11 +76,16 @@ void g7_draw_map(g7_vertex mouse)
 		for (int ii = 0; ii < game_state.map.size.x; ++ii)
 		{
 			g7_vertex buf = screen_to_tile(mouse);
-			g7_vertex buf2= screen_to_tile(him);
 
-			g7_draw_tile(i, ii, game_state.map.tab[i][ii], (buf.x == ii && buf.y == i) || (ii == chosen_tile.x && i == chosen_tile.y ) || (ii == buf2.x && i == buf2.y ));			
+			g7_draw_tile(i, ii, game_state.map.tab[i][ii], (buf.x == ii && buf.y == i) || (ii == chosen_tile.x && i == chosen_tile.y ));			
 		}
 	}
+}
+
+void g7_draw_players()
+{
+	g7_draw_tile(game_state.playerA.pos.y , game_state.playerA.pos.x, pA, false);
+	g7_draw_tile(game_state.playerB.pos.y , game_state.playerB.pos.x, pB, false);
 }
 
 
@@ -82,7 +94,19 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 	if(event->type == SDL_MOUSEBUTTONDOWN)
 	{
 		chosen_tile = screen_to_tile(*mouse);
+		if (chosen_tile.x >= game_state.map.size.x || chosen_tile.y >= game_state.map.size.y
+			|| chosen_tile.x < 0 || chosen_tile.y < 0)
+		{
+			chosen_tile.x = -1;
+			chosen_tile.y = -1;
+		}
+		else
+		{
+			game_state.playerA.pos = chosen_tile;
+		}
 	}
+
+
 
 	if (event->type == SDL_USEREVENT)
 	{
@@ -94,38 +118,55 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 }
 
 bool bumpe;
-static PipesPtr potoki;
 
 
-
-Uint32 my_callbackfunc(Uint32 interval, void *param)
+Uint32 net_callback(Uint32 interval, void *param)
 {
+	char message[1024];
 
-	g7_vertex mouse;
-	SDL_GetMouseState(&mouse.x, &mouse.y);
+	TCPsocket *client = ((TCPsocket*)param);
 
-	char tmp[1024];
-	sprintf(tmp, "%d %d\n", mouse.x, mouse.y);
-	sendStringToPipe(potoki, tmp);
+	int len;
+	int result;
 
-	if(getStringFromPipe(potoki, tmp, 1024))
+	if(chosen_tile.x != -1)
 	{
-		int xtmp, ytmp;
-		if(sscanf(tmp, "%d %d ", &xtmp, &ytmp) == 2)
-		{
-			him.x = xtmp;
-			him.y = ytmp;
-		}
+		sprintf(message, "%d %d ",chosen_tile.x, chosen_tile.y );
+	}
+	else
+	{
+		sprintf(message, "KEEP ALIVE");
+	}	
 
+	len = strlen(message)+1;
+
+
+	result=SDLNet_TCP_Send(*client,message,len); /* add 1 for the NULL */
+	if(result<len)
+		printf("SDLNet_TCP_Send: %s\n",SDLNet_GetError());
+
+
+	len = SDLNet_TCP_Recv(*client, message, 1024);
+
+	if(!len)
+	{
+		printf("SDLNet_TCP_Recv: %s\n",SDLNet_GetError());
+		return 0;
+	}
+
+	printf("Received: %.*s\n",len,message);
+
+	int bx, by;
+	if(sscanf(message, "%d %d ", &bx, &by) == 2)
+	{
+		game_state.playerB.pos.x = bx;
+		game_state.playerB.pos.y = by;
+		printf("Set player to %d %d\n", bx, by );
 	}
 
 
 	SDL_Event event;
 	SDL_UserEvent userevent;
-
-	/* In this example, our callback pushes an SDL_USEREVENT event
-	into the queue, and causes our callback to be called again at the
-	same interval: */
 
 	userevent.type = SDL_USEREVENT;
 	userevent.code = 0;
@@ -143,17 +184,35 @@ Uint32 my_callbackfunc(Uint32 interval, void *param)
 }
 
 
-
-
 int gameplay_stageloop(G7_stage *stage)
 {
-	// if((potoki=initPipes(stage->flags & G7_PARAM_HOST)) == NULL)
-	// 	return -1;
+	SDLNet_Init();
 
+	TCPsocket client;
+	TCPsocket server;
+	IPaddress ip;
 
-	// SDL_AddTimer(1000, my_callbackfunc, NULL);
+	if(stage->flags & G7_PARAM_HOST)
+	{
+		SDLNet_ResolveHost(&ip, NULL, 9999);
+		server = SDLNet_TCP_Open(&ip);
+		puts("Waiting for a client to connect...");
 
-	//DOES NOT WORK!!!!!!!!!
+		while(!(client = SDLNet_TCP_Accept(server)))
+		{
+			SDL_Delay(100);			
+		}
+			
+	}
+	else
+	{
+		SDLNet_ResolveHost(&ip,"localhost",9999);
+		client = SDLNet_TCP_Open(&ip);		
+	}
+
+	// SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "G7", "Cośtam", NULL);
+
+	SDL_AddTimer(100, net_callback, &client);
 
 	chosen_tile.x = -1;
 	chosen_tile.y = -1;
@@ -171,10 +230,6 @@ int gameplay_stageloop(G7_stage *stage)
 
 	int running = 1;
 	struct nk_color background = nk_rgb(28,48,62);
-
-	float x = 340;
-	float y = 120;
-	float z = 100;
 
 	g7_vertex mouse;
 	mouse.x = 0;
@@ -204,21 +259,6 @@ int gameplay_stageloop(G7_stage *stage)
 
 			nk_layout_row_dynamic(stage->ctx, 30, 1);
 
-			if (nk_button_label(stage->ctx, "Up"))
-			{
-				y-=10.0f;
-				printf("y: %f\n", y );
-			}
-			if (nk_button_label(stage->ctx, "Left"))
-			{
-				x-=10.f;
-				printf("x: %f\n", x );
-			}
-			if (nk_button_label(stage->ctx, "Rad+"))
-			{
-				z+=10.0f;
-				printf("z: %f\n", z );
-			}
 			if (nk_button_label(stage->ctx, "Exit"))
 			{
 				running = 0;
@@ -239,10 +279,9 @@ int gameplay_stageloop(G7_stage *stage)
 		glOrtho(0.0f, win_width, win_height, 0.0f, -1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// for (int i = 0; i < 10; ++i)
-			// DrawCircle(x, y, z, 10000);
 
 		g7_draw_map(mouse);
+		g7_draw_players();
 	
 		glClearColor(bg[0], bg[1], bg[2], bg[3]);
 		//MAY BREAK
