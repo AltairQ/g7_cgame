@@ -60,3 +60,58 @@ int load_map(int choice)
 	return ret_code;
 
 }
+
+void g7_command_parse(char* cmd)
+{
+	int x, y;
+
+	if (cmd[0] == 'M')
+	{
+		if (cmd[1] == 'A')
+		{			
+			if(sscanf(cmd+3, "%d %d", &x, &y) == 2 )
+			{
+				game_state.playerA.vel.x = x;
+				game_state.playerA.vel.y = y;
+
+				game_state.playerA.pos.x += x;
+				game_state.playerA.pos.y += y;
+			}
+		}
+
+		if (cmd[1] == 'B')
+		{			
+			if(sscanf(cmd+3, "%d %d", &x, &y) == 2 )
+			{
+				game_state.playerB.vel.x = x;
+				game_state.playerB.vel.y = y;
+
+				game_state.playerB.pos.x += x;
+				game_state.playerB.pos.y += y;
+			}
+		}
+
+	}
+
+	if (cmd[0] == 'P')
+	{
+		if (cmd[1] == 'A')
+		{			
+			if(sscanf(cmd+3, "%d %d", &x, &y) == 2 )
+			{
+				game_state.playerA.pos.x = x;
+				game_state.playerA.pos.y = y;
+			}
+		}
+
+		if (cmd[1] == 'B')
+		{			
+			if(sscanf(cmd+3, "%d %d", &x, &y) == 2 )
+			{
+				game_state.playerB.pos.x = x;
+				game_state.playerB.pos.y = y;
+			}
+		}
+	}
+
+}

@@ -1,22 +1,9 @@
 #include "g7_common.h"
 
-
-void DrawCircle(float cx, float cy, float r, int num_segments)
-{
-	glColor4f(0.2f, 0.7f, 0.0f, 0.7f);
-	glBegin(GL_LINE_LOOP);
-	for(int ii = 0; ii < num_segments; ii++)
-	{
-		float theta = 2.0f * 3.1415926f * (float)(ii) / (float)(num_segments);//get the current angle
-
-		float x = r * cosf(theta);//calculate the x component
-		float y = r * sinf(theta);//calculate the y component
-
-		glVertex2f(x + cx, y + cy);//output vertex
-
-	}
-	glEnd();
-}
+float scale = 1.0f;
+float x_offset = 200.0f;
+bool host = false;
+bool newmove = false;
 
 void g7_draw_tile(int y, int x, g7_tile tile, bool focus)
 {
@@ -50,11 +37,11 @@ void g7_draw_tile(int y, int x, g7_tile tile, bool focus)
 	
 
 	float x1, x2, y1, y2;
-	x1 = x*50;
-	x2 = (x+1)*50;
-	y1 = y*50;
-	y2 = (y+1)*50;
-	float x_offset = 200;
+	x1 = x*scale;
+	x2 = (x+1)*scale;
+	y1 = y*scale;
+	y2 = (y+1)*scale;
+	
 
 	glBegin(GL_QUADS);
 	glVertex2f(x_offset + x1, y1);
@@ -64,8 +51,36 @@ void g7_draw_tile(int y, int x, g7_tile tile, bool focus)
 	glEnd();
 }
 
-
 g7_vertex chosen_tile;
+
+bool g7_is_accessible(g7_vertex tile)
+{
+	if(host)
+	{
+		if (game_state.playerA.vel.x -2 <= tile.x - game_state.playerA.pos.x  && game_state.playerA.vel.x + 2 >= tile.x - game_state.playerA.pos.x &&
+		  game_state.playerA.vel.y -2 <= tile.y - game_state.playerA.pos.y  && game_state.playerA.vel.y + 2 >= tile.y - game_state.playerA.pos.y)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		if (game_state.playerB.vel.x -2 <= tile.x - game_state.playerB.pos.x  && game_state.playerB.vel.x + 2 >= tile.x - game_state.playerB.pos.x &&
+		  game_state.playerB.vel.y -2 <= tile.y - game_state.playerB.pos.y  && game_state.playerB.vel.y + 2 >= tile.y - game_state.playerB.pos.y)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+}
+
 
 void g7_draw_map(g7_vertex mouse)
 {
@@ -76,8 +91,11 @@ void g7_draw_map(g7_vertex mouse)
 		for (int ii = 0; ii < game_state.map.size.x; ++ii)
 		{
 			g7_vertex buf = screen_to_tile(mouse);
+			g7_vertex me;
+			me.x = ii;
+			me.y = i;
 
-			g7_draw_tile(i, ii, game_state.map.tab[i][ii], (buf.x == ii && buf.y == i) || (ii == chosen_tile.x && i == chosen_tile.y ));			
+			g7_draw_tile(i, ii, game_state.map.tab[i][ii], g7_is_accessible(me) || (buf.x == ii && buf.y == i) || (ii == chosen_tile.x && i == chosen_tile.y ));			
 		}
 	}
 }
@@ -87,7 +105,6 @@ void g7_draw_players()
 	g7_draw_tile(game_state.playerA.pos.y , game_state.playerA.pos.x, pA, false);
 	g7_draw_tile(game_state.playerB.pos.y , game_state.playerB.pos.x, pB, false);
 }
-
 
 void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 {
@@ -102,10 +119,26 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 		}
 		else
 		{
-			game_state.playerA.pos = chosen_tile;
+			if( game_state.map.tab[chosen_tile.y][chosen_tile.x] != block && g7_is_accessible(chosen_tile))
+			{
+
+				if(host)
+				{
+					game_state.playerA.vel.x = chosen_tile.x - game_state.playerA.pos.x;
+					game_state.playerA.vel.y = chosen_tile.y - game_state.playerA.pos.y;
+					game_state.playerA.pos = chosen_tile;
+				}
+				else
+				{
+					game_state.playerB.vel.x = chosen_tile.x - game_state.playerB.pos.x;
+					game_state.playerB.vel.y = chosen_tile.y - game_state.playerB.pos.y;
+					game_state.playerB.pos = chosen_tile;
+				}
+	
+				newmove = true;
+			}
 		}
 	}
-
 
 
 	if (event->type == SDL_USEREVENT)
@@ -117,7 +150,6 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 	
 }
 
-bool bumpe;
 
 
 Uint32 net_callback(Uint32 interval, void *param)
@@ -129,13 +161,18 @@ Uint32 net_callback(Uint32 interval, void *param)
 	int len;
 	int result;
 
-	if(chosen_tile.x != -1)
+	if(chosen_tile.x != -1 && newmove)
 	{
-		sprintf(message, "%d %d ",chosen_tile.x, chosen_tile.y );
+		if(host)
+			sprintf(message, "MA %d %d ", game_state.playerA.vel.x, game_state.playerA.vel.y );
+		else
+			sprintf(message, "MB %d %d ", game_state.playerB.vel.x, game_state.playerB.vel.y );
+
+		newmove = false;
 	}
 	else
 	{
-		sprintf(message, "KEEP ALIVE");
+		sprintf(message, "K"); // keep-alive
 	}	
 
 	len = strlen(message)+1;
@@ -156,14 +193,34 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 	printf("Received: %.*s\n",len,message);
 
-	int bx, by;
-	if(sscanf(message, "%d %d ", &bx, &by) == 2)
+	switch(message[0])
 	{
-		game_state.playerB.pos.x = bx;
-		game_state.playerB.pos.y = by;
-		printf("Set player to %d %d\n", bx, by );
-	}
+		case 'K':
+		//keep-alive, we can easily ignore it
+		break;
 
+		case 'Q':
+		//peer quitting, gotta quit too
+		break;
+
+		case 'M':
+		//move info, let's update
+		case 'P':
+		//position info, let's update
+
+		g7_command_parse(message);
+
+		break;
+
+		case 'W':
+		//someone won, game ends
+		break;
+
+		default:
+		//dunno
+		break;
+
+	}
 
 	SDL_Event event;
 	SDL_UserEvent userevent;
@@ -179,7 +236,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 	SDL_PushEvent(&event);
 	// return(interval);
 
-	puts("bumpe");
+	// puts("bumpe");
 	return(interval);
 }
 
@@ -202,6 +259,7 @@ int gameplay_stageloop(G7_stage *stage)
 		{
 			SDL_Delay(100);			
 		}
+		host = true;
 			
 	}
 	else
@@ -219,6 +277,8 @@ int gameplay_stageloop(G7_stage *stage)
 
 	int win_width = 1024;
 	int win_height = 768;
+
+
 	if(stage->flags & G7_PARAM_FULLSCREEN)
 		G7_SDL_go_fullscreen(stage->win);
 	else
@@ -252,9 +312,9 @@ int gameplay_stageloop(G7_stage *stage)
 		nk_input_end(stage->ctx);
 		SDL_GetMouseState(&mouse.x, &mouse.y);
 
-		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, 120, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, (int)x_offset - 50, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
-			NK_WINDOW_TITLE))
+			NK_WINDOW_TITLE | NK_WINDOW_BORDER))
 		{
 
 			nk_layout_row_dynamic(stage->ctx, 30, 1);
@@ -272,6 +332,8 @@ int gameplay_stageloop(G7_stage *stage)
 		{float bg[4];
 		nk_color_fv(bg, background);
 		SDL_GetWindowSize(stage->win, &win_width, &win_height);
+		scale = MIN((float)(win_width- (int)x_offset)/(float)(game_state.map.size.x),
+		(float)(win_height)/(float)(game_state.map.size.y) );
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
