@@ -53,7 +53,7 @@ int main_menu_stageloop(G7_stage *stage)
 
 
 			nk_layout_row_dynamic(stage->ctx, 230, 1);
-			nk_group_begin(stage->ctx, "Game Settings", NK_WINDOW_TITLE );
+			nk_group_begin(stage->ctx, "Game Settings:", NK_WINDOW_TITLE );
 
 			nk_layout_row_dynamic(stage->ctx, 50, 1);
 			if (nk_option_label(stage->ctx, "fullscreen", option_fullscreen == G7_PARAM_FULLSCREEN ))

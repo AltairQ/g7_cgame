@@ -23,7 +23,7 @@ int load_map(int choice)
 		goto cleanup;
 	}
 
-	tmp_map.tab = malloc(sizeof(g7_tile*) * tmp_map.size.y);
+	tmp_map.tab = malloc(sizeof(g7_tile*) * tmp_map.size.x);
 
 	if (tmp_map.tab == NULL)
 	{
@@ -31,9 +31,9 @@ int load_map(int choice)
 		goto cleanup;
 	}
 
-	for (int i = 0; i < tmp_map.size.y; ++i)
+	for (int i = 0; i < tmp_map.size.x; ++i)
 	{
-		tmp_map.tab[i] = malloc(sizeof(g7_tile) * tmp_map.size.x);
+		tmp_map.tab[i] = malloc(sizeof(g7_tile) * tmp_map.size.y);
 		if(tmp_map.tab[i] == NULL)
 		{
 			ret_code = -3;
@@ -41,9 +41,10 @@ int load_map(int choice)
 		}
 	}
 
-	for (int i = 0; i < tmp_map.size.y; ++i)
+
+	for (int ii = 0; ii < tmp_map.size.y; ++ii)
 	{
-		for (int ii = 0; ii < tmp_map.size.x; ++ii)
+		for (int i = 0; i < tmp_map.size.x; ++i)
 		{
 			char buf;
 			fscanf(map, "%c ", &buf);
@@ -53,6 +54,7 @@ int load_map(int choice)
 
 
 	game_state.map = tmp_map;
+	game_state.current_move = 1;
 
 
 	cleanup:
@@ -113,5 +115,6 @@ void g7_command_parse(char* cmd)
 			}
 		}
 	}
+
 
 }
