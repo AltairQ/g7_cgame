@@ -26,4 +26,5 @@
 #include "gameplay.h"
 #include "parser.h"
 #include "engine.h"
-
+#include "new_game_dialog.h"
+#include "connect_dialog.h"

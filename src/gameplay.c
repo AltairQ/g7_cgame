@@ -245,13 +245,15 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 
 int running = 1;
 
+
+
 Uint32 net_callback(Uint32 interval, void *param)
 {
 	char message[1024];
 
-	TCPsocket *client = ((TCPsocket*)param);
+	TCPsocket *client = &client_state.socket;
 
-	int len;
+	size_t len;
 	int result;
 
 
@@ -313,6 +315,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 		case 'Q':
 		//peer quitting, gotta quit too
+		running=0;
 		//TODO
 		break;
 
@@ -358,69 +361,18 @@ Uint32 net_callback(Uint32 interval, void *param)
 	// return(interval);
 
 	// puts("bumpe");
+	if(running)
 	return(interval);
+
+	return 0;
 }
 
 
 int gameplay_stageloop(G7_stage *stage)
 {
-	SDLNet_Init();
-
-	TCPsocket client;
-	TCPsocket server;
-	IPaddress ip;
-
-	game_state.playerA.prefix = 'A';
-	game_state.playerB.prefix = 'B';
-
-	if(stage->flags & G7_PARAM_HOST)
-	{
-		SDLNet_ResolveHost(&ip, NULL, 9999);
-		server = SDLNet_TCP_Open(&ip);
-		puts("Waiting for a client to connect...");
-
-		while(!(client = SDLNet_TCP_Accept(server)))
-		{
-			puts("Waiting for client...");
-			SDL_Delay(100);			
-		}
-		host = true;
 
 
-		client_state.own_state = &(game_state.playerA);
-		client_state.enemy_state = &(game_state.playerB);
-		client_state.socket = client;
-		client_state.host = true;			
-	}
-	else
-	{
-		SDLNet_ResolveHost(&ip,"localhost",9999);
-		while(!(client = SDLNet_TCP_Open(&ip)))
-		{
-			puts("Waiting for server...");
-			SDL_Delay(1000);
-
-		}
-
-		client_state.own_state = &(game_state.playerB);
-		client_state.enemy_state = &(game_state.playerA);
-		client_state.socket = client;
-		client_state.host = false;			
-	
-
-	}
-
-	client_state.new_own_move = false;
-	client_state.new_enemy_move = false;
-	client_state.display_scale = 1.0f;
-	client_state.last_move = 0;
-
-
-
-
-	// 
-
-	SDL_AddTimer(100, net_callback, &client);
+	SDL_AddTimer(100, net_callback, NULL);
 
 	chosen_tile.x = -1;
 	chosen_tile.y = -1;
@@ -449,8 +401,8 @@ int gameplay_stageloop(G7_stage *stage)
 	{
 		if (iwon)
 		{
-			running = false;
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Congratulations!", "You're winner!", NULL);
+			running = false;
 			
 		}
 
@@ -534,6 +486,8 @@ int gameplay_stageloop(G7_stage *stage)
 
 
 	}
+
+
 
 	puts("Exit lol.");
 

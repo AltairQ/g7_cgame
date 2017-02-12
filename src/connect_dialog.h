@@ -1,0 +1,1 @@
+int connect_dialog_stageloop(G7_stage *stage);

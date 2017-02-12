@@ -1,11 +1,14 @@
 #include "g7_common.h"
 
-int load_dialog_stageloop(G7_stage *stage)
+char *maps[256];
+size_t map_count=1;
+
+int new_game_stageloop(G7_stage *stage)
 {
 	{
 		DIR *dir;
 		struct dirent *ent;
-		if ((dir = opendir ("./saves/")) != NULL) {
+		if ((dir = opendir ("./maps/")) != NULL) {
 
 			while ((ent = readdir (dir)) != NULL && map_count < 256)
 			{
@@ -49,7 +52,7 @@ int load_dialog_stageloop(G7_stage *stage)
 
 		nk_input_end(stage->ctx);
 
-		if (nk_begin(stage->ctx, "Choose saved game:", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Choose map", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
 			NK_WINDOW_TITLE))
 		{
@@ -66,7 +69,7 @@ int load_dialog_stageloop(G7_stage *stage)
 
 				if (map_count == 1)
 				{
-					nk_label(stage->ctx, "(no saves found)", NK_TEXT_CENTERED);
+					nk_label(stage->ctx, "(no maps found)", NK_TEXT_CENTERED);
 				}
 
 			}

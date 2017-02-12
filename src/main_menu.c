@@ -28,13 +28,12 @@ int main_menu_stageloop(G7_stage *stage)
 
 		nk_input_end(stage->ctx);
 
-		if (nk_begin(stage->ctx, "Main menu", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Main menu", nk_rect(0, 0, (float)win_width, (float)win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
 			0))
 		{
 			enum {EASY, HARD};
-			static int op = EASY;
-			
+		
 
 			nk_layout_row_dynamic(stage->ctx, 80, 1);
 			nk_label(stage->ctx, "MAIN MENU", NK_TEXT_CENTERED);
