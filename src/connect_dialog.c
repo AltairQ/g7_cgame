@@ -3,6 +3,79 @@
 bool waiting = true;
 char dots_tab[]=".....";
 
+
+bool net_send_map()
+{
+	char buf[1024]="";
+	char buf2[1024]="";
+	sprintf(buf, "X %d %d", game_state.map.size.x, game_state.map.size.y);
+	sprintf(buf2, "%-15s", buf);
+	// printf("%s\n",buf2 );
+
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+	for (int ii = 0; ii < game_state.map.size.y; ++ii)
+	{
+		// printf("LINE LOL: %d\n", ii);
+		for (int i = 0; i < game_state.map.size.x; ++i)
+		{
+			net_send_byte(game_state.map.tab[i][ii] + '0');
+			// putchar(game_state.map.tab[i][ii] + '0');
+		}
+		// puts("");
+	}
+
+	sprintf(buf, "PA %d %d", game_state.playerA.pos.x, game_state.playerA.pos.y);
+	sprintf(buf2, "%-31s", buf);
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+	sprintf(buf, "PB %d %d", game_state.playerB.pos.x, game_state.playerB.pos.y);
+	sprintf(buf2, "%-31s", buf);
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+	sprintf(buf, "VA %d %d", game_state.playerA.vel.x, game_state.playerA.vel.y);
+	sprintf(buf2, "%-31s", buf);
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+	sprintf(buf, "VB %d %d", game_state.playerB.vel.x, game_state.playerB.vel.y);
+	sprintf(buf2, "%-31s", buf);
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+
+}
+
+bool net_receive_map()
+{
+	char buf[1024];
+	net_receive_buffer(buf, 16);
+	// puts(buf);
+
+	sscanf(buf, "X %d %d", &game_state.map.size.x, &game_state.map.size.y);
+
+	g7_allocate_map(&game_state.map);
+
+	for (int ii = 0; ii < game_state.map.size.y; ++ii)
+	{
+		for (int i = 0; i < game_state.map.size.x; ++i)
+		{
+			char bbyte;
+			net_receive_byte(&bbyte);
+			// putchar(bbyte);
+			game_state.map.tab[i][ii] = bbyte - '0';
+		}
+		// puts("");
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		net_receive_buffer(buf, 32);
+		// puts(buf);
+		g7_command_parse(buf);
+	}
+
+
+}
+
 Uint32 net_wait(Uint32 interval, void *param)
 {
 	if (!waiting)
@@ -22,9 +95,10 @@ Uint32 net_wait(Uint32 interval, void *param)
 		TCPsocket server = *((TCPsocket*)param);
 
 		if(client = SDLNet_TCP_Accept(server))
-		{
-			waiting = false;
-			client_state.socket = client;					
+		{			
+			client_state.socket = client;
+			net_send_map();
+			waiting = false;					
 		}
 
 		
@@ -36,9 +110,10 @@ Uint32 net_wait(Uint32 interval, void *param)
 		TCPsocket client;
 
 		if(client = SDLNet_TCP_Open(&ip))
-		{
-			waiting = false;
+		{			
 			client_state.socket = client;
+			net_receive_map();
+			waiting = false;
 		}
 		
 	}
@@ -71,6 +146,8 @@ Uint32 net_wait(Uint32 interval, void *param)
 int connect_dialog_stageloop(G7_stage *stage)
 {
 	SDLNet_Init();
+
+	bool canceled = false;
 
 	TCPsocket client;
 	TCPsocket server;
@@ -154,6 +231,7 @@ int connect_dialog_stageloop(G7_stage *stage)
 
 			if (nk_button_label(stage->ctx, "Cancel"))
 			{
+				canceled = true;
 				running = 0;
 			}
 
@@ -182,5 +260,9 @@ int connect_dialog_stageloop(G7_stage *stage)
 
 	}
 	waiting = false;
-	return 0;	
+
+	if(canceled)
+		return -1;
+
+	return	0;
 }

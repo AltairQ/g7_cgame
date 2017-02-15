@@ -52,8 +52,9 @@ int main(int argc, char* argv[])
 	game_stage.ctx = ctx;
 	game_stage.flags = 0;
 
-
 	game_stage.flags = main_menu_stageloop(&game_stage);
+
+	assert(G7_PARAM_HOST || G7_PARAM_CLIENT);
 
 	#ifdef DEBUG
 	printf("exited stageloop\n");
@@ -63,11 +64,14 @@ int main(int argc, char* argv[])
 		goto cleanup;
 
 
+	#ifdef DEBUG
 
 	if (game_stage.flags & G7_PARAM_FULLSCREEN)
 	{
 		printf("fullscreen\n");
 	}
+
+	#endif
 
 	int map_choice=-3;
 
@@ -93,7 +97,23 @@ int main(int argc, char* argv[])
 
 	if (map_choice > 0)
 	{
-		printf("loadmap: %d \n", load_map(map_choice));
+		char buffname[256]="";
+
+		if (game_stage.flags & G7_PARAM_NEWGAME)
+		{
+			strcat(buffname, "maps/");
+		}
+
+		if(game_stage.flags & G7_PARAM_LOADGAME)
+		{
+			strcat(buffname, "saves/");
+		}
+
+		strcat(buffname, maps[map_choice]);
+
+		puts(buffname);
+
+		printf("init_gamestate_from_file: %d \n", init_gamestate_from_file(buffname, game_stage.flags & G7_PARAM_LOADGAME));
 	}
 
 	#ifdef DEBUG
@@ -107,11 +127,12 @@ int main(int argc, char* argv[])
 	}
 	#endif
 
-	
+
 	game_stage.ctx = G7_nk_sdl_reset(game_stage.win);
 
-	connect_dialog_stageloop(&game_stage);
-	puts("I'm out.");
+	if (connect_dialog_stageloop(&game_stage) == -1)
+		goto cleanup;
+
 
 
 	gameplay_stageloop(&game_stage);

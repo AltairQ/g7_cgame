@@ -1,9 +1,5 @@
 #include "g7_common.h"
 
-// void dprintf()
-// {
-
-// }
 
 struct nk_context* G7_nk_sdl_setup(SDL_Window *win)
 {

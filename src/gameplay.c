@@ -71,104 +71,6 @@ bool g7_is_accessible(g7_vertex tile)
 
 }
 
-void g7_draw_line(g7_vertex from, g7_vertex to)
-{
-	int x1 = from.x;
-	int y1 = from.y;
-
-	int x2 = to.x;
-	int y2 = to.y;
-
-	int d, dx, dy, ai, bi, xi, yi;
-	int x = x1;
-	int y = y1;
-
-	if (x1 < x2)
-	{ 
-		xi = 1;
-		dx = x2 - x1;
-	} 
-	else
-	{ 
-		xi = -1;
-		dx = x1 - x2;
-	}
-	// ustalenie kierunku rysowania
-	if (y1 < y2)
-	{ 
-		yi = 1;
-		dy = y2 - y1;
-	} 
-	else
-	{ 
-		yi = -1;
-		dy = y1 - y2;
-	}
-	// pierwszy piksel
-	// g7_draw_tile(y, x, finish, false);
-	// oś wiodąca OX
-	if (dx > dy)
-	{
-		ai = (dy - dx) * 2;
-		bi = dy * 2;
-		d = bi - dx;
-		// pętla po kolejnych x
-		while (x != x2)
-		{ 
-			// test współczynnika
-			if (d >= 0)
-			{ 
-				x += xi;
-				y += yi;
-				d += ai;
-			} 
-			else
-			{
-				d += bi;
-				x += xi;
-			}
-
-			if(game_state.map.tab[x][y] == block)
-				g7_draw_tile(x, y, pB, false);
-
-			if(game_state.map.tab[x][y] == blank)
-				g7_draw_tile(x, y, finish, false);
-
-
-		}
-	} 
-	// oś wiodąca OY
-	else
-	{ 
-		ai = ( dx - dy ) * 2;
-		bi = dx * 2;
-		d = bi - dy;
-		// pętla po kolejnych y
-		while (y != y2)
-		{ 
-			// test współczynnika
-			if (d >= 0)
-			{ 
-				x += xi;
-				y += yi;
-				d += ai;
-			}
-			else
-			{
-				d += bi;
-				y += yi;
-			}
-
-		if(game_state.map.tab[x][y] == block)
-			g7_draw_tile(x, y, pB, false);
-
-		if(game_state.map.tab[x][y] == blank)
-			g7_draw_tile(x, y, finish, false);
-		}
-	}
-
-}
-
 
 void g7_draw_map(g7_vertex mouse)
 {
@@ -194,18 +96,18 @@ void g7_draw_players()
 	g7_draw_tile(game_state.playerB.pos.x , game_state.playerB.pos.y, pB, false);
 }
 
-void g7_check_step()
-{
-	if (enemy_chose && client_state.last_move == game_state.current_move)
-	{
-		g7_command_parse(client_state.buf_cmd);
-		enemy_chose = false;
-		game_state.current_move++;
-	}
+// void g7_check_step()
+// {
+// 	if (enemy_chose && client_state.last_move == game_state.current_move)
+// 	{
+// 		g7_command_parse(client_state.buf_cmd);
+// 		enemy_chose = false;
+// 		game_state.current_move++;
+// 	}
 
-	if(game_state.map.tab[client_state.own_state->pos.x][client_state.own_state->pos.y] == finish)
-		iwon = true;
-}
+// 	if(game_state.map.tab[client_state.own_state->pos.x][client_state.own_state->pos.y] == finish)
+// 		iwon = true;
+// }
 
 void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 {
@@ -220,16 +122,24 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 		}
 		else
 		{
-			if(client_state.new_own_move == false && client_state.last_move < game_state.current_move && g7_is_accessible(chosen_tile) && g7_path_is_nonblocked(client_state.own_state->pos, chosen_tile))
+			if(client_state.new_own_move == false && g7_is_accessible(chosen_tile) && g7_path_is_nonblocked(client_state.own_state->pos, chosen_tile))
 			{
-				client_state.own_state->vel.x = chosen_tile.x - client_state.own_state->pos.x;
-				client_state.own_state->vel.y = chosen_tile.y - client_state.own_state->pos.y;
+
+				int vx, vy;
+				vx = chosen_tile.x - client_state.own_state->pos.x;
+				vy = chosen_tile.y - client_state.own_state->pos.y;
+				client_state.own_state->vel.x = vx;
+				client_state.own_state->vel.y = vy;				
 				client_state.own_state->pos = chosen_tile;
-				client_state.last_move++;			
+
+				char buf[32]="";
+				sprintf(buf, "M%c %d %d", client_state.own_state->prefix, vx, vy);
+				net_send_buffer(buf, 32);
+				g7_append_to_save(buf);
 
 				// if(game_state.map.tab[])
 				client_state.new_own_move = true;
-				g7_check_step();
+				// g7_check_step();
 			}
 		}
 	}
@@ -245,50 +155,35 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 
 int running = 1;
 
+Uint32 server_check(Uint32 interval, void *param)
+{
+	if(!running)
+		return 0;
+
+	if (enemy_chose && client_state.new_own_move)
+	{
+		enemy_chose = false;
+		client_state.new_own_move = false;
+		g7_command_parse(client_state.buf_cmd);
+		char buf[32]="S";
+		net_send_buffer(buf, 32);
+		g7_append_to_save(buf);
+	}
+
+	return interval;
+}
+
 
 
 Uint32 net_callback(Uint32 interval, void *param)
 {
-	char message[1024];
+	char message[32];
 
 	TCPsocket *client = &client_state.socket;
 
-	size_t len;
+	size_t len = 32;
 	int result;
 
-
-	if(!running)
-	{
-		sprintf(message, "Q%c ", client_state.own_state->prefix);
-	}
-	else
-	{
-
-		if(chosen_tile.x != -1 && client_state.new_own_move)
-		{		
-			sprintf(message, "M%c %d %d ", client_state.own_state->prefix, client_state.own_state->vel.x, client_state.own_state->vel.y );
-			client_state.new_own_move = false;	
-		}
-		else
-		{
-			if(iwon)
-			{
-				sprintf(message, "W%c ", client_state.own_state->prefix);
-			}
-			else
-			{
-				sprintf(message, "K"); // keep-alive
-			}
-	
-		}	
-	}
-
-	len = strlen(message)+1;
-
-
-	result=SDLNet_TCP_Send(*client,message,len); /* add 1 for the NULL */
-	if(result<len)
-		printf("SDLNet_TCP_Send: %s\n",SDLNet_GetError());
 
 	if(!running)
 	{
@@ -297,7 +192,8 @@ Uint32 net_callback(Uint32 interval, void *param)
 	}
 
 
-	len = SDLNet_TCP_Recv(*client, message, 1024);
+
+	len = SDLNet_TCP_Recv(*client, message, 32);
 
 	if(!len)
 	{
@@ -306,6 +202,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 	}
 
 	printf("Received: %.*s\n",len,message);
+	bool valid_command = false;
 
 	switch(message[0])
 	{
@@ -322,13 +219,23 @@ Uint32 net_callback(Uint32 interval, void *param)
 		case 'M':
 		//move info, let's update
 		enemy_chose = true;
-		strncpy(client_state.buf_cmd, message, 256);
+		strncpy(client_state.buf_cmd, message, 32);
+		valid_command = true;
 		break;
 		// game_state.current_move++;
 		case 'P':
-		//position info, let's update		
+		//position info, let's update
 		g7_command_parse(message);
+		valid_command = true;
 
+		break;
+
+		case 'S':
+		//make a step		
+			enemy_chose = false;
+			client_state.new_own_move = false;
+			g7_command_parse(client_state.buf_cmd);
+			valid_command=true;
 		break;
 
 		case 'W':
@@ -342,6 +249,10 @@ Uint32 net_callback(Uint32 interval, void *param)
 		break;
 
 	}
+
+	if (valid_command && client_state.host)
+		g7_append_to_save(message);		
+	
 
 
 	SDL_Event event;
@@ -367,11 +278,8 @@ Uint32 net_callback(Uint32 interval, void *param)
 	return 0;
 }
 
-
 int gameplay_stageloop(G7_stage *stage)
 {
-
-
 	SDL_AddTimer(100, net_callback, NULL);
 
 	chosen_tile.x = -1;
@@ -399,26 +307,15 @@ int gameplay_stageloop(G7_stage *stage)
 	SDL_Event evt;
 	while (running && SDL_WaitEvent(&evt))
 	{
-		if (iwon)
-		{
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Congratulations!", "You're winner!", NULL);
-			running = false;
-			
-		}
 
-		if (en_won)
-		{
-			running = false;
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Game over!", "You lost!", NULL);			
-		}
-
-		g7_check_step();
+		if(stage->flags & G7_PARAM_HOST)
+			server_check(0, NULL);
 		
 		nk_input_begin(stage->ctx);
 
 		do
 		{
-			if (evt.type == SDL_QUIT) return 0;
+			if (evt.type == SDL_QUIT) running = 0;
 			g7_event_filter(&evt, &mouse);
 			
 		}
@@ -434,7 +331,7 @@ int gameplay_stageloop(G7_stage *stage)
 
 			nk_layout_row_dynamic(stage->ctx, 30, 1);
 
-			if(client_state.last_move < game_state.current_move)
+			if(!client_state.new_own_move)
 			{
 				nk_label(stage->ctx, "Your move", NK_TEXT_CENTERED);
 			}
@@ -442,7 +339,6 @@ int gameplay_stageloop(G7_stage *stage)
 			{
 				nk_label(stage->ctx, "Waiting...", NK_TEXT_CENTERED);
 			}
-
 
 
 			if (nk_button_label(stage->ctx, "Exit"))
@@ -471,7 +367,6 @@ int gameplay_stageloop(G7_stage *stage)
 
 		g7_draw_map(mouse);
 		g7_draw_players();
-		// g7_draw_line(game_state.playerA.pos, screen_to_tile(mouse));
 	
 		glClearColor(bg[0], bg[1], bg[2], bg[3]);
 		//MAY BREAK
@@ -487,7 +382,7 @@ int gameplay_stageloop(G7_stage *stage)
 
 	}
 
-
+	net_atexit(client_state.own_state->prefix);
 
 	puts("Exit lol.");
 

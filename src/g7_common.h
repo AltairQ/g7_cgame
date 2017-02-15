@@ -17,14 +17,16 @@
 #define G7_PARAM_LOADGAME 2
 #define G7_PARAM_FULLSCREEN 4
 #define G7_PARAM_HOST 8
-
+#define G7_PARAM_CLIENT 16
 
 #include "utils.h"
 
+#include "engine.h"
 #include "main_menu.h"
 #include "load_dialog.h"
 #include "gameplay.h"
 #include "parser.h"
-#include "engine.h"
 #include "new_game_dialog.h"
 #include "connect_dialog.h"
+#include "saves.h"
+#include "net_utils.h"

@@ -8,6 +8,7 @@ int main_menu_stageloop(G7_stage *stage)
 	int option_host = 0;
 	bool action_newgame = false;
 	bool action_loadgame = false;
+	bool action_joingame = false;
 
 	int win_width;
 	int win_height;
@@ -42,12 +43,19 @@ int main_menu_stageloop(G7_stage *stage)
 
 			if (nk_button_label(stage->ctx, "New Game"))
 			{
+				option_host = G7_PARAM_HOST;
 				action_newgame = true;				
 			}
 
 			if (nk_button_label(stage->ctx, "Load Game"))
 			{
+				option_host = G7_PARAM_HOST;
 				action_loadgame = true;				
+			}
+
+			if (nk_button_label(stage->ctx, "Join Game"))
+			{
+				action_joingame = true;
 			}
 
 
@@ -62,15 +70,6 @@ int main_menu_stageloop(G7_stage *stage)
 			else
 			{
 				option_fullscreen = 0;
-			}
-
-			if (nk_option_label(stage->ctx, "host", option_host == G7_PARAM_HOST ))
-			{
-				option_host = G7_PARAM_HOST;
-			}
-			else
-			{
-				option_host = 0;
 			}
 
 
@@ -110,6 +109,9 @@ int main_menu_stageloop(G7_stage *stage)
 
 		if(action_newgame)
 			return G7_PARAM_NEWGAME | option_fullscreen | option_host;
+
+		if(action_joingame)
+			return G7_PARAM_CLIENT | option_fullscreen;
 
 	}
 }

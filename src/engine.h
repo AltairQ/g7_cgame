@@ -45,8 +45,6 @@ typedef struct
 	g7_map map;
 	g7_player_state playerA;
 	g7_player_state playerB;
-	int current_move;
-	bool semaphor;
 }
 g7_game_state;
 
@@ -56,7 +54,7 @@ typedef struct
 	bool new_enemy_move;
 	g7_player_state *own_state;
 	g7_player_state *enemy_state;
-	char buf_cmd[256];
+	char buf_cmd[32];
 	int last_move;
 	float display_scale;
 	TCPsocket socket;
