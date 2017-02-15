@@ -19,7 +19,7 @@ bool net_send_map()
 		// printf("LINE LOL: %d\n", ii);
 		for (int i = 0; i < game_state.map.size.x; ++i)
 		{
-			net_send_byte(game_state.map.tab[i][ii] + '0');
+			net_send_byte((char)game_state.map.tab[i][ii] + '0');
 			// putchar(game_state.map.tab[i][ii] + '0');
 		}
 		// puts("");
@@ -41,6 +41,11 @@ bool net_send_map()
 	sprintf(buf2, "%-31s", buf);
 	net_send_buffer(buf2, strlen(buf2)+1);
 
+	sprintf(buf, "D %d", game_state.max_delta);
+	sprintf(buf2, "%-31s", buf);
+	net_send_buffer(buf2, strlen(buf2)+1);
+
+	return true;
 
 }
 
@@ -66,12 +71,14 @@ bool net_receive_map()
 		// puts("");
 	}
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		net_receive_buffer(buf, 32);
 		// puts(buf);
 		g7_command_parse(buf);
 	}
+
+	return true;
 
 
 }
@@ -94,7 +101,7 @@ Uint32 net_wait(Uint32 interval, void *param)
 		TCPsocket client;
 		TCPsocket server = *((TCPsocket*)param);
 
-		if(client = SDLNet_TCP_Accept(server))
+		if((client = SDLNet_TCP_Accept(server)) != NULL)
 		{			
 			client_state.socket = client;
 			net_send_map();
@@ -109,7 +116,7 @@ Uint32 net_wait(Uint32 interval, void *param)
 		IPaddress ip = *((IPaddress*)param);
 		TCPsocket client;
 
-		if(client = SDLNet_TCP_Open(&ip))
+		if((client = SDLNet_TCP_Open(&ip)) != NULL)
 		{			
 			client_state.socket = client;
 			net_receive_map();
@@ -149,12 +156,11 @@ int connect_dialog_stageloop(G7_stage *stage)
 
 	bool canceled = false;
 
-	TCPsocket client;
-	TCPsocket server;
 	IPaddress ip;
 
 	game_state.playerA.prefix = 'A';
 	game_state.playerB.prefix = 'B';
+	game_state.max_delta = 5;
 
 	if(stage->flags & G7_PARAM_HOST)
 	{
@@ -163,7 +169,7 @@ int connect_dialog_stageloop(G7_stage *stage)
 		client_state.enemy_state = &(game_state.playerB);
 
 		SDLNet_ResolveHost(&ip, NULL, 9999);
-		server = SDLNet_TCP_Open(&ip);
+		TCPsocket server = SDLNet_TCP_Open(&ip);
 		puts("Waiting for a client to connect...");
 
 		SDL_AddTimer(300, net_wait, &server);
@@ -185,8 +191,6 @@ int connect_dialog_stageloop(G7_stage *stage)
 	client_state.new_own_move = false;
 	client_state.new_enemy_move = false;
 	client_state.display_scale = 1.0f;
-	client_state.last_move = 0;
-
 
 
 	int running = 1;

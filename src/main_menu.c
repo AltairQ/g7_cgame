@@ -22,7 +22,7 @@ int main_menu_stageloop(G7_stage *stage)
 
 		do
 		{
-			if (evt.type == SDL_QUIT) return 0;
+			if (evt.type == SDL_QUIT) running=0;
 			nk_sdl_handle_event(&evt);
 		}
 		while (SDL_PollEvent(&evt));
@@ -78,7 +78,7 @@ int main_menu_stageloop(G7_stage *stage)
 
 			if (nk_button_label(stage->ctx, "Exit"))
 			{
-				return 0;
+				running = 0;
 			}
 
 
@@ -112,6 +112,7 @@ int main_menu_stageloop(G7_stage *stage)
 
 		if(action_joingame)
 			return G7_PARAM_CLIENT | option_fullscreen;
-
 	}
+	
+	return 0;
 }

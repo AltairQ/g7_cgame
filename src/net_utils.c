@@ -2,7 +2,7 @@
 
 bool net_send_buffer(char* buf, size_t len)
 {
-	return len == SDLNet_TCP_Send(client_state.socket, buf, len);
+	return (int)len == SDLNet_TCP_Send(client_state.socket, buf, (int)len);
 }
 
 bool net_send_byte(char byte)
@@ -10,9 +10,9 @@ bool net_send_byte(char byte)
 	return 1 == SDLNet_TCP_Send(client_state.socket, &byte, 1);
 }
 
-size_t net_receive_buffer(char* buf, size_t max_len)
+int net_receive_buffer(char* buf, size_t max_len)
 {
-	return SDLNet_TCP_Recv(client_state.socket, buf, max_len);
+	return SDLNet_TCP_Recv(client_state.socket, buf, (int)max_len);
 }
 
 bool net_receive_byte(char* byte)

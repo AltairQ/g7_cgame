@@ -38,13 +38,14 @@ void g7_draw_tile(int x, int y, g7_tile tile, bool focus)
 		break;
 	}
 
-	
+	float xf = (float)x;
+	float yf = (float)y;
 
 	float x1, x2, y1, y2;
-	x1 = x*scale;
-	x2 = (x+1)*scale;
-	y1 = y*scale;
-	y2 = (y+1)*scale;
+	x1 = xf*scale;
+	x2 = (xf+1.0f)*scale;
+	y1 = yf*scale;
+	y2 = (yf+1.0f)*scale;
 	
 
 	glBegin(GL_QUADS);
@@ -57,10 +58,10 @@ void g7_draw_tile(int x, int y, g7_tile tile, bool focus)
 
 g7_vertex chosen_tile;
 
-bool g7_is_accessible(g7_vertex tile)
+bool g7_is_accessible(g7_player_state player, g7_vertex tile)
 {
-	if (client_state.own_state->vel.x -10 <= tile.x - client_state.own_state->pos.x  && client_state.own_state->vel.x + 10 >= tile.x - client_state.own_state->pos.x &&
-	 client_state.own_state->vel.y -10 <= tile.y - client_state.own_state->pos.y  && client_state.own_state->vel.y + 10 >= tile.y - client_state.own_state->pos.y)
+	if (player.vel.x -game_state.max_delta <= tile.x - player.pos.x  && player.vel.x + game_state.max_delta >= tile.x - player.pos.x &&
+	 player.vel.y -game_state.max_delta <= tile.y - player.pos.y  && player.vel.y + game_state.max_delta >= tile.y - player.pos.y)
 	{
 		return true;
 	}
@@ -85,7 +86,7 @@ void g7_draw_map(g7_vertex mouse)
 			me.x = i;
 			me.y = ii;
 
-			g7_draw_tile(i, ii, game_state.map.tab[i][ii],( g7_path_is_nonblocked(client_state.own_state->pos, me) && g7_is_accessible(me) )|| (buf.x == i && buf.y == ii) || (i == chosen_tile.x && ii == chosen_tile.y ));			
+			g7_draw_tile(i, ii, game_state.map.tab[i][ii],( g7_path_is_nonblocked(client_state.own_state->pos, me) && g7_is_accessible(*client_state.own_state, me) )|| (buf.x == i && buf.y == ii) || (i == chosen_tile.x && ii == chosen_tile.y ));			
 		}
 	}
 }
@@ -95,19 +96,6 @@ void g7_draw_players()
 	g7_draw_tile(game_state.playerA.pos.x , game_state.playerA.pos.y, pA, false);
 	g7_draw_tile(game_state.playerB.pos.x , game_state.playerB.pos.y, pB, false);
 }
-
-// void g7_check_step()
-// {
-// 	if (enemy_chose && client_state.last_move == game_state.current_move)
-// 	{
-// 		g7_command_parse(client_state.buf_cmd);
-// 		enemy_chose = false;
-// 		game_state.current_move++;
-// 	}
-
-// 	if(game_state.map.tab[client_state.own_state->pos.x][client_state.own_state->pos.y] == finish)
-// 		iwon = true;
-// }
 
 void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 {
@@ -122,7 +110,7 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 		}
 		else
 		{
-			if(client_state.new_own_move == false && g7_is_accessible(chosen_tile) && g7_path_is_nonblocked(client_state.own_state->pos, chosen_tile))
+			if(client_state.new_own_move == false && g7_is_accessible(*client_state.own_state, chosen_tile) && g7_path_is_nonblocked(client_state.own_state->pos, chosen_tile))
 			{
 
 				int vx, vy;
@@ -134,9 +122,8 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 
 				char buf[32]="";
 				sprintf(buf, "M%c %d %d", client_state.own_state->prefix, vx, vy);
+				strncpy(client_state.own_buf_cmd, buf, 32);
 				net_send_buffer(buf, 32);
-				g7_append_to_save(buf);
-
 				// if(game_state.map.tab[])
 				client_state.new_own_move = true;
 				// g7_check_step();
@@ -155,22 +142,93 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 
 int running = 1;
 
-Uint32 server_check(Uint32 interval, void *param)
+bool g7_has_moves(g7_player_state player)
+{
+	for (int ii = 0; ii < game_state.map.size.y; ++ii)
+	{
+		for (int i = 0; i < game_state.map.size.x; ++i)
+		{
+			g7_vertex btile;
+
+			btile.x = i;
+			btile.y = ii;
+
+			if(g7_is_accessible(player, btile) && g7_path_is_nonblocked(player.pos, btile))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+bool g7_on_finish(g7_player_state player)
+{
+	int x = player.pos.x;
+	int y = player.pos.y;
+
+	return (game_state.map.tab[x][y] == finish);
+}
+
+void server_check()
 {
 	if(!running)
-		return 0;
+		return;
 
 	if (enemy_chose && client_state.new_own_move)
 	{
 		enemy_chose = false;
 		client_state.new_own_move = false;
+		g7_append_to_save(client_state.buf_cmd);
+		g7_append_to_save(client_state.own_buf_cmd);
+
 		g7_command_parse(client_state.buf_cmd);
 		char buf[32]="S";
 		net_send_buffer(buf, 32);
 		g7_append_to_save(buf);
+
+		int a_win = 0;
+		int b_win = 0;
+
+		if(!g7_has_moves(game_state.playerA))
+			a_win = -1;
+
+		if(!g7_has_moves(game_state.playerB))
+			b_win = -1;
+
+		if(g7_on_finish(game_state.playerA))
+			a_win = 1;
+
+		if(g7_on_finish(game_state.playerB))
+			b_win = 1;
+
+		if (a_win * b_win == 1)
+		{
+			game_state.draw = true;
+			strcpy(buf,"R");
+		}
+
+		if (a_win > b_win)
+		{
+			game_state.a_win = true;
+			strcpy(buf,"WA");			
+		}
+
+		if (b_win > a_win)
+		{
+			game_state.b_win = true;
+			strcpy(buf,"WB");
+		}
+
+		if (a_win == 0 && b_win == 0)
+		{
+			strcpy(buf,"K");			
+		}
+
+		net_send_buffer(buf, 32);
+		g7_append_to_save(buf);
+
 	}
 
-	return interval;
 }
 
 
@@ -181,9 +239,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 	TCPsocket *client = &client_state.socket;
 
-	size_t len = 32;
-	int result;
-
+	int len = 32;
 
 	if(!running)
 	{
@@ -201,8 +257,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 		return 0;
 	}
 
-	printf("Received: %.*s\n",len,message);
-	bool valid_command = false;
+	bool save_command = false;
 
 	switch(message[0])
 	{
@@ -220,13 +275,15 @@ Uint32 net_callback(Uint32 interval, void *param)
 		//move info, let's update
 		enemy_chose = true;
 		strncpy(client_state.buf_cmd, message, 32);
-		valid_command = true;
+		save_command = false;
 		break;
 		// game_state.current_move++;
 		case 'P':
+		case 'W':
+		case 'R':
 		//position info, let's update
 		g7_command_parse(message);
-		valid_command = true;
+		save_command = true;
 
 		break;
 
@@ -235,14 +292,9 @@ Uint32 net_callback(Uint32 interval, void *param)
 			enemy_chose = false;
 			client_state.new_own_move = false;
 			g7_command_parse(client_state.buf_cmd);
-			valid_command=true;
+			save_command=true;
 		break;
 
-		case 'W':
-		en_won = true;
-		//someone won, game ends
-		//TODO
-		break;
 
 		default:
 		//dunno
@@ -250,7 +302,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 	}
 
-	if (valid_command && client_state.host)
+	if (save_command && client_state.host)
 		g7_append_to_save(message);		
 	
 
@@ -266,12 +318,8 @@ Uint32 net_callback(Uint32 interval, void *param)
 	event.type = SDL_USEREVENT;
 	event.user = userevent;
 
-
-	//TODO push the parser to event loop
 	SDL_PushEvent(&event);
-	// return(interval);
 
-	// puts("bumpe");
 	if(running)
 	return(interval);
 
@@ -309,7 +357,7 @@ int gameplay_stageloop(G7_stage *stage)
 	{
 
 		if(stage->flags & G7_PARAM_HOST)
-			server_check(0, NULL);
+			server_check();
 		
 		nk_input_begin(stage->ctx);
 
@@ -324,7 +372,7 @@ int gameplay_stageloop(G7_stage *stage)
 		nk_input_end(stage->ctx);
 		SDL_GetMouseState(&mouse.x, &mouse.y);
 
-		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, (int)x_offset - 50, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, x_offset - 50.0f, (float)win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		  
 			NK_WINDOW_TITLE | NK_WINDOW_BORDER))
 		{
@@ -379,13 +427,33 @@ int gameplay_stageloop(G7_stage *stage)
 		SDL_GL_SwapWindow(stage->win);
 		}
 
+		if (game_state.draw || game_state.a_win || game_state.b_win)
+		{
+			running = 0;
+		}
+
 
 	}
 
 	net_atexit(client_state.own_state->prefix);
+	g7_close_save();
 
-	puts("Exit lol.");
+	int retcode = 0;
 
+	if (game_state.draw)
+	{
+		retcode = 3;		
+	}
 
-	return 0;
+	if ((client_state.host && game_state.a_win) || (!client_state.host && game_state.b_win))
+	{
+		retcode = 2;
+	}
+
+	if ((!client_state.host && game_state.a_win) || (client_state.host && game_state.b_win))
+	{
+		retcode = 1;
+	}
+
+	return retcode;
 }

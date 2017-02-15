@@ -16,7 +16,7 @@ void g7_append_to_save(char *cmd)
 
 bool g7_write_map_to_save()
 {
-	if (g7_create_save_file == NULL)
+	if (g7_current_save_file == NULL)
 		return false;
 
 	fprintf(g7_current_save_file, "X %d %d\n", game_state.map.size.x, game_state.map.size.y);
@@ -26,7 +26,7 @@ bool g7_write_map_to_save()
 	{
 		for (int i = 0; i < game_state.map.size.x; ++i)
 		{
-			fputc(game_state.map.tab[i][ii] + '0', g7_current_save_file);
+			fputc((int)game_state.map.tab[i][ii] + '0', g7_current_save_file);
 		}
 		fputs("\n", g7_current_save_file);
 	}
@@ -60,4 +60,10 @@ void g7_create_save_file()
 		exit(-1);
 	}
 
+}
+
+void g7_close_save()
+{
+	if(g7_current_save_file != NULL	)
+		fclose(g7_current_save_file);
 }

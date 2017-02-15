@@ -1,0 +1,1 @@
+int end_game_stageloop(G7_stage *stage);

@@ -9,8 +9,8 @@ g7_vertex screen_to_tile(g7_vertex mouse)
 {
 	g7_vertex ret;
 
-	ret.x = (int)floor((float)(mouse.x - x_offset)/scale);
-	ret.y = (int)floor((float)(mouse.y)/scale);
+	ret.x = (int)floor((float)((float)mouse.x - x_offset)/scale);
+	ret.y = (int)floor((float)((float)mouse.y)/scale);
 
 	return ret;
 

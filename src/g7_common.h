@@ -30,3 +30,4 @@
 #include "connect_dialog.h"
 #include "saves.h"
 #include "net_utils.h"
+#include "end_game.h"

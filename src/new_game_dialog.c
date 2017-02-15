@@ -45,26 +45,26 @@ int new_game_stageloop(G7_stage *stage)
 
 		do
 		{
-			if (evt.type == SDL_QUIT) return 0;
+			if (evt.type == SDL_QUIT) running = 0;
 			nk_sdl_handle_event(&evt);
 		}
 		while (SDL_PollEvent(&evt));
 
 		nk_input_end(stage->ctx);
 
-		if (nk_begin(stage->ctx, "Choose map", nk_rect(0, 0, win_width, win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Choose map", nk_rect(0, 0, (float)win_width, (float)win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		   
 			NK_WINDOW_TITLE))
 		{
-			nk_layout_row_dynamic(stage->ctx, win_height - 100, 1);
+			nk_layout_row_dynamic(stage->ctx, (float)win_height - 100.0f, 1);
 
 			nk_group_begin(stage->ctx, "", 0 );
 			{
 				nk_layout_row_dynamic(stage->ctx, 30, 1);
-				for (int i = 1; i < map_count; ++i)
+				for (size_t i = 1; i < map_count; ++i)
 					if(nk_button_label(stage->ctx, maps[i]))
 					{
-						option_mapchoice = i;
+						option_mapchoice = (int)i;
 					}
 
 				if (map_count == 1)
@@ -111,4 +111,6 @@ int new_game_stageloop(G7_stage *stage)
 
 
 	}
+
+	return 0;
 }

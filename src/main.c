@@ -134,8 +134,12 @@ int main(int argc, char* argv[])
 		goto cleanup;
 
 
-
-	gameplay_stageloop(&game_stage);
+	int gameres;
+	if((gameres = gameplay_stageloop(&game_stage)) > 0)
+	{
+		game_stage.flags = gameres;
+		end_game_stageloop(&game_stage);
+	}
 	
 
 cleanup:

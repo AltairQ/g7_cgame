@@ -43,6 +43,12 @@ g7_player_state;
 typedef struct
 {
 	g7_map map;
+	int max_delta;
+	
+	bool a_win;
+	bool b_win;
+	bool draw;
+
 	g7_player_state playerA;
 	g7_player_state playerB;
 }
@@ -55,7 +61,7 @@ typedef struct
 	g7_player_state *own_state;
 	g7_player_state *enemy_state;
 	char buf_cmd[32];
-	int last_move;
+	char own_buf_cmd[32];
 	float display_scale;
 	TCPsocket socket;
 	bool host;

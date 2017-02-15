@@ -3,7 +3,7 @@
 bool g7_allocate_map(g7_map* in_map)
 {
 
-	(*in_map).tab = malloc(sizeof(g7_tile*) * (*in_map).size.x);
+	(*in_map).tab = malloc(sizeof(g7_tile*) * (size_t)(*in_map).size.x);
 
 	if ((*in_map).tab == NULL)
 	{
@@ -12,7 +12,7 @@ bool g7_allocate_map(g7_map* in_map)
 
 	for (int i = 0; i < (*in_map).size.x; ++i)
 	{
-		(*in_map).tab[i] = malloc(sizeof(g7_tile) * (*in_map).size.y);
+		(*in_map).tab[i] = malloc(sizeof(g7_tile) * (size_t)(*in_map).size.y);
 
 		if((*in_map).tab[i] == NULL)
 		{
@@ -173,6 +173,32 @@ void g7_command_parse(char* cmd)
 			}
 		}
 	break;
+
+	case 'D':
+		if(sscanf(cmd+1, "%d", &x) == 1)
+			game_state.max_delta = x;
+	break;
+
+	case 'R':
+		game_state.draw = true;
+	break;
+
+	case 'W':
+
+		if (cmd[1] == 'A')
+		{		
+			game_state.a_win = true;
+		}
+
+		if (cmd[1] == 'B')
+		{			
+			game_state.b_win = true;
+		}
+
+
+	break;
+
+
 
 
 	default:
