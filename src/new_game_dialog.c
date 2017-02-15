@@ -1,17 +1,31 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// new_game_dialog.c
+
+//handles the new game dialog
+
 #include "g7_common.h"
 
+//array in which we store maps' filenames
 char *maps[256];
+//map count (+1)
 size_t map_count=1;
 
-int new_game_stageloop(G7_stage *stage)
+
+//main thread
+int new_game_stageloop(g7_stage *stage)
 {
+
+	//using dirent search for all maps in ./maps/ directory
 	{
 		DIR *dir;
 		struct dirent *ent;
+		//open directory
 		if ((dir = opendir ("./maps/")) != NULL) {
 
 			while ((ent = readdir (dir)) != NULL && map_count < 256)
 			{
+				//ignore the . and .. special files
 				if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0 )
 					continue;
 
@@ -30,9 +44,11 @@ int new_game_stageloop(G7_stage *stage)
 
 	}
 
+	//running flag
 	int running = 1;
 	struct nk_color background = nk_rgb(28,48,62);
 
+	//here we store the choice
 	int option_mapchoice = 0;
 	int win_height, win_width;
 	SDL_GetWindowSize(stage->win, &win_width, &win_height);
@@ -58,15 +74,19 @@ int new_game_stageloop(G7_stage *stage)
 		{
 			nk_layout_row_dynamic(stage->ctx, (float)win_height - 100.0f, 1);
 
+			//list all maps that we found
 			nk_group_begin(stage->ctx, "", 0 );
 			{
 				nk_layout_row_dynamic(stage->ctx, 30, 1);
 				for (size_t i = 1; i < map_count; ++i)
+					//if clicked
 					if(nk_button_label(stage->ctx, maps[i]))
 					{
+						//then set the choice
 						option_mapchoice = (int)i;
 					}
 
+				//if we found no maps
 				if (map_count == 1)
 				{
 					nk_label(stage->ctx, "(no maps found)", NK_TEXT_CENTERED);

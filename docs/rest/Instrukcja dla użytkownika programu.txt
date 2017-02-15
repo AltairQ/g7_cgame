@@ -1,0 +1,8 @@
+Aby zagrać wykonaj następujące kroki:
+- uruchom dwie kopie programu (ważne by były one uruchomione w folderze zawierającym foldery save i maps)
+- na jednej z nich wybierz opcję "New Game" albo "Load Game" i wybierz odpowiednią mapę lub zapisany stan gry
+- w drugiej kopii programu wybierz opcję "Join Game"
+- programy powinny nawiązać komunikację i rozpocząć rozgrywkę
+- gracze naprzemian wykonują ruchy klikając na wybrane podświetlone pole na mapie
+- wygrwa gracz który jako pierwszy dotrze do zielonego pola
+- możliwa jest przegrana jeżeli osiągnięta prędkość nie pozwala na zmianę pozycji - dlatego jedź ostrożnie!

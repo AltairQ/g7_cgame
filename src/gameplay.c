@@ -1,16 +1,13 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// gameplay.c
+
 #include "g7_common.h"
 
-float scale = 1.0f;
-float x_offset = 200.0f;
-bool host = false;
-bool newmove = false;
-
-bool enemy_chose = false;
-bool iwon=false;
-bool en_won=false;
-
+//draw tile on screen
 void g7_draw_tile(int x, int y, g7_tile tile, bool focus)
 {
+	//set colour and alpha according to tile type
 	switch(tile)
 	{
 		case blank:
@@ -38,45 +35,39 @@ void g7_draw_tile(int x, int y, g7_tile tile, bool focus)
 		break;
 	}
 
+	//cast the screen coordinates
 	float xf = (float)x;
 	float yf = (float)y;
 
+	//calculate on-screen coordinates from x,y
+	//just some multiplication
 	float x1, x2, y1, y2;
-	x1 = xf*scale;
-	x2 = (xf+1.0f)*scale;
-	y1 = yf*scale;
-	y2 = (yf+1.0f)*scale;
+	x1 = xf*client_state.scale;
+	x2 = (xf+1.0f)*client_state.scale;
+	y1 = yf*client_state.scale;
+	y2 = (yf+1.0f)*client_state.scale;
 	
 
+	//draw tile
 	glBegin(GL_QUADS);
-	glVertex2f(x_offset + x1, y1);
-	glVertex2f(x_offset + x2, y1);
-	glVertex2f(x_offset + x2, y2);
-	glVertex2f(x_offset + x1, y2);
+	glVertex2f(client_state.x_offset + x1, y1);
+	glVertex2f(client_state.x_offset + x2, y1);
+	glVertex2f(client_state.x_offset + x2, y2);
+	glVertex2f(client_state.x_offset + x1, y2);
 	glEnd();
 }
 
+//global state of chosen tile
 g7_vertex chosen_tile;
 
-bool g7_is_accessible(g7_player_state player, g7_vertex tile)
-{
-	if (player.vel.x -game_state.max_delta <= tile.x - player.pos.x  && player.vel.x + game_state.max_delta >= tile.x - player.pos.x &&
-	 player.vel.y -game_state.max_delta <= tile.y - player.pos.y  && player.vel.y + game_state.max_delta >= tile.y - player.pos.y)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-
-}
-
-
+//draw the whole map
 void g7_draw_map(g7_vertex mouse)
 {
+	//use transparency
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//for each individual tile
 	for (int i = 0; i < game_state.map.size.x; ++i)
 	{
 		for (int ii = 0; ii < game_state.map.size.y; ++ii)
@@ -91,28 +82,38 @@ void g7_draw_map(g7_vertex mouse)
 	}
 }
 
+//draw players on screen
 void g7_draw_players()
 {
 	g7_draw_tile(game_state.playerA.pos.x , game_state.playerA.pos.y, pA, false);
 	g7_draw_tile(game_state.playerB.pos.x , game_state.playerB.pos.y, pB, false);
 }
 
+//filtering events
 void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 {
+	//if we receive a click
 	if(event->type == SDL_MOUSEBUTTONDOWN)
 	{
+		//get the coordinates
+
 		chosen_tile = screen_to_tile(*mouse);
+		//if we are off-map
 		if (chosen_tile.x >= game_state.map.size.x || chosen_tile.y >= game_state.map.size.y
 			|| chosen_tile.x < 0 || chosen_tile.y < 0)
 		{
+			//set to -1, -1
 			chosen_tile.x = -1;
 			chosen_tile.y = -1;
 		}
 		else
 		{
+			//if it's a valid choice
+			//> it's our turn
+			//> the tile is accessible and within reach
 			if(client_state.new_own_move == false && g7_is_accessible(*client_state.own_state, chosen_tile) && g7_path_is_nonblocked(client_state.own_state->pos, chosen_tile))
 			{
-
+				//do it
 				int vx, vy;
 				vx = chosen_tile.x - client_state.own_state->pos.x;
 				vy = chosen_tile.y - client_state.own_state->pos.y;
@@ -120,73 +121,64 @@ void g7_event_filter(SDL_Event *event, g7_vertex *mouse)
 				client_state.own_state->vel.y = vy;				
 				client_state.own_state->pos = chosen_tile;
 
+				//send move info
 				char buf[32]="";
 				sprintf(buf, "M%c %d %d", client_state.own_state->prefix, vx, vy);
+				//SERVER ONLY
+				//save our movement in buffer
 				strncpy(client_state.own_buf_cmd, buf, 32);
+				//send move info
 				net_send_buffer(buf, 32);
-				// if(game_state.map.tab[])
+				
 				client_state.new_own_move = true;
-				// g7_check_step();
+				
 			}
 		}
 	}
 
 
+	//if it's an userevent then it's just a wake-up
+	//from the net thread
 	if (event->type == SDL_USEREVENT)
 		return;		
 	
-
+	//send the event to nuklear
 	nk_sdl_handle_event(event);	
 	
 }
 
+//running flag
 int running = 1;
 
-bool g7_has_moves(g7_player_state player)
-{
-	for (int ii = 0; ii < game_state.map.size.y; ++ii)
-	{
-		for (int i = 0; i < game_state.map.size.x; ++i)
-		{
-			g7_vertex btile;
-
-			btile.x = i;
-			btile.y = ii;
-
-			if(g7_is_accessible(player, btile) && g7_path_is_nonblocked(player.pos, btile))
-				return true;
-		}
-	}
-
-	return false;
-}
-
-bool g7_on_finish(g7_player_state player)
-{
-	int x = player.pos.x;
-	int y = player.pos.y;
-
-	return (game_state.map.tab[x][y] == finish);
-}
-
+//check game step
+//check if the game should proceed (next turn)
+//also check for game end
 void server_check()
 {
 	if(!running)
 		return;
 
-	if (enemy_chose && client_state.new_own_move)
+	//if both players chose
+	if (client_state.new_enemy_move && client_state.new_own_move)
 	{
-		enemy_chose = false;
+		//reset state
+		client_state.new_enemy_move = false;
 		client_state.new_own_move = false;
+		//save commands
 		g7_append_to_save(client_state.buf_cmd);
 		g7_append_to_save(client_state.own_buf_cmd);
 
+		//execute the client command
 		g7_command_parse(client_state.buf_cmd);
+		//send the S command
 		char buf[32]="S";
 		net_send_buffer(buf, 32);
+		//save it
 		g7_append_to_save(buf);
 
+		//did a win?
 		int a_win = 0;
+		//did b win?
 		int b_win = 0;
 
 		if(!g7_has_moves(game_state.playerA))
@@ -201,29 +193,34 @@ void server_check()
 		if(g7_on_finish(game_state.playerB))
 			b_win = 1;
 
+		//draw
 		if (a_win * b_win == 1)
 		{
 			game_state.draw = true;
 			strcpy(buf,"R");
 		}
 
+		//A won
 		if (a_win > b_win)
 		{
 			game_state.a_win = true;
 			strcpy(buf,"WA");			
 		}
 
+		//B won
 		if (b_win > a_win)
 		{
 			game_state.b_win = true;
 			strcpy(buf,"WB");
 		}
 
+		//nothing happened
 		if (a_win == 0 && b_win == 0)
 		{
 			strcpy(buf,"K");			
 		}
 
+		//send command
 		net_send_buffer(buf, 32);
 		g7_append_to_save(buf);
 
@@ -232,7 +229,9 @@ void server_check()
 }
 
 
-
+//the net_receive function
+//it's running in a separate thread as a SDL_Timer
+//checks for new data from peer
 Uint32 net_callback(Uint32 interval, void *param)
 {
 	char message[32];
@@ -241,6 +240,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 	int len = 32;
 
+	//if we are shutting down
 	if(!running)
 	{
 		SDLNet_TCP_Close(*client);
@@ -249,6 +249,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 
 
+	//try to receive data
 	len = SDLNet_TCP_Recv(*client, message, 32);
 
 	if(!len)
@@ -257,8 +258,10 @@ Uint32 net_callback(Uint32 interval, void *param)
 		return 0;
 	}
 
+	//should we save the command to save file?
 	bool save_command = false;
 
+	//process the data
 	switch(message[0])
 	{
 		case 'K':
@@ -273,23 +276,21 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 		case 'M':
 		//move info, let's update
-		enemy_chose = true;
-		strncpy(client_state.buf_cmd, message, 32);
-		save_command = false;
+			client_state.new_enemy_move = true;
+			strncpy(client_state.buf_cmd, message, 32);
+			save_command = false;
 		break;
-		// game_state.current_move++;
+		// positon or win info
 		case 'P':
 		case 'W':
 		case 'R':
-		//position info, let's update
-		g7_command_parse(message);
-		save_command = true;
-
+			g7_command_parse(message);
+			save_command = true;
 		break;
 
 		case 'S':
 		//make a step		
-			enemy_chose = false;
+			client_state.new_enemy_move = false;
 			client_state.new_own_move = false;
 			g7_command_parse(client_state.buf_cmd);
 			save_command=true;
@@ -297,7 +298,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 
 
 		default:
-		//dunno
+		//ignore it
 		break;
 
 	}
@@ -307,6 +308,7 @@ Uint32 net_callback(Uint32 interval, void *param)
 	
 
 
+	//generate an user event to wake up the main thread
 	SDL_Event event;
 	SDL_UserEvent userevent;
 
@@ -326,9 +328,14 @@ Uint32 net_callback(Uint32 interval, void *param)
 	return 0;
 }
 
-int gameplay_stageloop(G7_stage *stage)
+//main thread
+int gameplay_stageloop(g7_stage *stage)
 {
+	//register the timer
 	SDL_AddTimer(100, net_callback, NULL);
+
+	//the rest is self-explanatory
+	//regular stageloop
 
 	chosen_tile.x = -1;
 	chosen_tile.y = -1;
@@ -338,11 +345,11 @@ int gameplay_stageloop(G7_stage *stage)
 
 
 	if(stage->flags & G7_PARAM_FULLSCREEN)
-		G7_SDL_go_fullscreen(stage->win);
+		g7_SDL_go_fullscreen(stage->win);
 	else
 		SDL_SetWindowSize(stage->win, win_width, win_height);
 
-	stage->ctx = G7_nk_sdl_reset(stage->win);
+	stage->ctx = g7_nk_sdl_reset(stage->win);
 	SDL_GetWindowSize(stage->win, &win_width, &win_height);
 
 
@@ -372,7 +379,7 @@ int gameplay_stageloop(G7_stage *stage)
 		nk_input_end(stage->ctx);
 		SDL_GetMouseState(&mouse.x, &mouse.y);
 
-		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, x_offset - 50.0f, (float)win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
+		if (nk_begin(stage->ctx, "Menu", nk_rect(0, 0, client_state.x_offset - 50.0f, (float)win_height), //NK_WINDOW_MOVABLE| NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|
 		  
 			NK_WINDOW_TITLE | NK_WINDOW_BORDER))
 		{
@@ -403,7 +410,7 @@ int gameplay_stageloop(G7_stage *stage)
 		float bg[4];
 		nk_color_fv(bg, background);
 		SDL_GetWindowSize(stage->win, &win_width, &win_height);
-		scale = MIN((float)(win_width- (int)x_offset)/(float)(game_state.map.size.x),
+		client_state.scale = MIN((float)(win_width- (int)client_state.x_offset)/(float)(game_state.map.size.x),
 		(float)(win_height)/(float)(game_state.map.size.y) );
 
 		glMatrixMode(GL_PROJECTION);

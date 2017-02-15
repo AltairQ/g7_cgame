@@ -1,3 +1,9 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// g7_common.h
+
+//common header file for all files
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

@@ -1,4 +1,6 @@
-int gameplay_stageloop(G7_stage *stage);
+// Mateusz Maciejewski
+// 15.02.2017
+// gameplay.h
 
-extern float scale;
-extern float x_offset;
+//main thread
+int gameplay_stageloop(g7_stage *stage);

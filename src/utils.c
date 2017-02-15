@@ -1,7 +1,16 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// engine.h
+
 #include "g7_common.h"
 
+//contains snippet functions
+//essentially wrapper functions
 
-struct nk_context* G7_nk_sdl_setup(SDL_Window *win)
+
+
+//setup nuklear from given SDL_Window
+struct nk_context* g7_nk_sdl_setup(SDL_Window *win)
 {
 	struct nk_context *ctx  = nk_sdl_init(win);
 	{	
@@ -18,14 +27,16 @@ struct nk_context* G7_nk_sdl_setup(SDL_Window *win)
 	return ctx;
 }
 
-struct nk_context* G7_nk_sdl_reset(SDL_Window *win)
+//reset nuklear context
+struct nk_context* g7_nk_sdl_reset(SDL_Window *win)
 {
 	nk_sdl_shutdown();
-	return G7_nk_sdl_setup(win);
+	return g7_nk_sdl_setup(win);
 
 }
 
-void G7_SDL_go_fullscreen(SDL_Window *win)
+//go fullscreen
+void g7_SDL_go_fullscreen(SDL_Window *win)
 {
 	SDL_DisplayMode modein;
 	SDL_GetDesktopDisplayMode(0, &modein);

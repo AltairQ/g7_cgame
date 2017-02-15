@@ -1,7 +1,19 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// main_menu.h
+
+
+//main menu dialog
+//only purpose is to let the user
+//choose the gamemode, then pass the flag
+
 #include "g7_common.h"
 
-int main_menu_stageloop(G7_stage *stage)
+int main_menu_stageloop(g7_stage *stage)
 {
+
+	//self-explanatory
+	
 	int running = 1;
 	struct nk_color background = nk_rgb(28,48,62);
 	int option_fullscreen = 0;

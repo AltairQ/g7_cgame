@@ -1,7 +1,16 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// load_dialog.c
+
+//handles the save loading UI
+
 #include "g7_common.h"
 
-int load_dialog_stageloop(G7_stage *stage)
+int load_dialog_stageloop(g7_stage *stage)
 {
+	//this is exactly the new game code
+	//only it's searching in saves/ folder
+	//it also uses the maps array from new_game
 	{
 		DIR *dir;
 		struct dirent *ent;

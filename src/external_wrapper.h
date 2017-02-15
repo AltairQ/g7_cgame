@@ -1,3 +1,11 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// external_wrapper.h
+
+//this file is used to hide warnings that result
+//from external headers - therefore are beyond the scope
+//of my project
+
 #pragma GCC system_header
 //to suppress unhelpful warnings
 

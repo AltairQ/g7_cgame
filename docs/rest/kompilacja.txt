@@ -1,0 +1,6 @@
+Aby skompilować program należy zainstalować następujące dodatkowe pakiety:
+libsdl2-dev
+libsdl2-net-dev
+oraz odpowiedni pakiet OpenGL
+
+a następnie uruchomić skrypt build_linux.sh (lub build_windows.bat)

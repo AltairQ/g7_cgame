@@ -1,16 +1,25 @@
+// Mateusz Maciejewski
+// 15.02.2017
+// end_game.c
+
 #include "g7_common.h"
 
-int end_game_stageloop(G7_stage *stage)
+//main thread function
+int end_game_stageloop(g7_stage *stage)
 {
-	
+	//running flag
 	int running = 1;
+
+	//not much to comment here to be honest
+	//regular stageloop that reads the stage->flags
+	//and displays the info about the game ending
 
 	struct nk_color background = nk_rgb(28,48,62);
 
 	int win_width;
 	int win_height;
 	SDL_SetWindowSize(stage->win, 300, 200);
-	stage->ctx = G7_nk_sdl_reset(stage->win);
+	stage->ctx = g7_nk_sdl_reset(stage->win);
 	SDL_GetWindowSize(stage->win, &win_width, &win_height);
 
 
