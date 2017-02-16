@@ -106,14 +106,14 @@ int main(int argc, char* argv[])
 		if (game_stage.flags & G7_PARAM_NEWGAME)
 		{
 			//then it's a map
-			strcat(buffname, "maps/");
+			strcpy(buffname, "./maps/");
 		}
 
 		//if we load a save
 		if(game_stage.flags & G7_PARAM_LOADGAME)
 		{
 			//then it's a save
-			strcat(buffname, "saves/");
+			strcpy(buffname, "./saves/");
 		}
 
 		//add the filename
