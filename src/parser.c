@@ -76,7 +76,7 @@ bool g7_read_state_from_file(FILE* map)
 
 
 	cleanup:
-	fclose(map);
+	// fclose(map);
 
 	return ret_code == 0;
 
